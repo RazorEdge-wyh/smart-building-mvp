@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>智慧建筑 · 室内环境小模型 MVP</title>
+<style>
+  :root{--bg:#0e1014;--panel:#161a21;--line:#2a3040;--fg:#e8edf5;--dim:#8d9bb0;
+        --dim2:#6b7789;--ok:#3ecf8e;--info:#4a9eff;--warn:#f5a623}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:15px/1.75 "Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+  .wrap{max-width:840px;margin:0 auto;padding:56px 22px 80px}
+  h1{font-size:27px;margin:0 0 6px;letter-spacing:-.4px}
+  .lead{color:var(--dim);font-size:15px;margin:0 0 28px}
+  h2{font-size:15px;margin:34px 0 10px;color:var(--fg);
+     border-left:3px solid var(--info);padding-left:10px}
+  p{margin:10px 0;color:#cfd8e3}
+  ul{margin:10px 0;padding-left:20px;color:#cfd8e3}
+  li{margin:5px 0}
+  code{background:var(--panel);padding:2px 6px;border-radius:4px;
+       font-family:ui-monospace,Consolas,monospace;font-size:13px;color:#bcd3ee}
+  .cta{display:inline-block;margin:6px 10px 6px 0;padding:12px 22px;border-radius:10px;
+       text-decoration:none;font-weight:600;transition:.18s}
+  .cta.primary{background:var(--info);color:#04121f}
+  .cta.primary:hover{filter:brightness(1.12)}
+  .cta.ghost{border:1px solid var(--line);color:var(--fg)}
+  .cta.ghost:hover{border-color:var(--info);color:var(--info)}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+  td,th{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left}
+  th{color:var(--dim);font-weight:600}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .note{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+        padding:14px 16px;margin:20px 0;font-size:13.5px;color:var(--dim)}
+  .note b{color:var(--fg)}
+  .ok{color:var(--ok)} .warn{color:var(--warn)}
+  footer{color:var(--dim2);font-size:13px;margin-top:44px;
+         border-top:1px solid var(--line);padding-top:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>智慧建筑 · 室内环境小模型 MVP</h1>
+  <p class="lead">给一栋楼装一个<b>装在本楼里、断网也能活、参数很小</b>的"脑子"——
+  听懂人话调环境、记住每个人的习惯、火灾时给出正确的疏散引导。</p>
+
+  <a class="cta primary" href="./demo/">▶ 打开交互演示</a>
+  <a class="cta ghost" href="https://github.com/RazorEdge-wyh/smart-building-mvp">查看源码</a>
+
+  <div class="note">
+    <b>演示是纯前端的</b>：Python 后端（仿真、安全校验、疏散路网、画像库）已在浏览器里用
+    JavaScript 重新实现，并通过了 <b>79 项移植正确性测试</b>（<code>static/test_port.mjs</code>）。
+    逻辑与 <code>eval/</code> 下的 Python 评测同源，但<b>绝对数值不可外推到真实建筑</b>。
+  </div>
+
+  <h2>实测结果（可复现）</h2>
+  <table>
+    <tr><th>指标</th><th class="num">数值</th><th>说明</th></tr>
+    <tr><td>占空预测 F1</td><td class="num ok">0.8848</td>
+        <td>14 天 × 2 房间，<b>按时间切分</b>防泄漏</td></tr>
+    <tr><td>意图解析 · 纯规则</td><td class="num">100%</td>
+        <td>同源测试集，存在乐观偏差</td></tr>
+    <tr><td>意图解析 · 纯小模型</td><td class="num warn">17.3%</td>
+        <td>但 JSON 合法率 <b>97.3%</b>（约束解码已解决格式）</td></tr>
+    <tr><td>同舒适下节能</td><td class="num ok">2.8% / 5.4%</td>
+        <td>vs 仅时间表 / vs 理想传感器（帕累托前沿口径）</td></tr>
+    <tr><td>应急路线合法性</td><td class="num ok">100%</td>
+        <td>火源房间误分配 <b>0 次</b>，措辞违规 100% 拦截</td></tr>
+  </table>
+
+  <h2>三条能力线</h2>
+  <ul>
+    <li><b>智能调温</b>：2R2C 灰盒热模型 + 占空预测 + 多住户 <b>minimax 折中</b> + 分时电价</li>
+    <li><b>习惯记忆</b>：记忆存数据库而非模型权重 —— 可解释、可更正、<b>可删除</b>（被遗忘权）</li>
+    <li><b>灾难引导</b>：路线来自<b>确定性图算法</b>，小模型只负责措辞；
+        火源房间转为<b>就地避险</b>；模型不可用时退化到预置广播</li>
+  </ul>
+
+  <h2>安全设计（核心，不是附属）</h2>
+  <p><b>模型只出"意图"，绝不直接控制设备。</b>每条指令都要过七道闸门：</p>
+  <ul>
+    <li>闸1 Schema · 闸2 权限 · <b>闸3 场景互锁（应急状态拒绝一切舒适性调节）</b></li>
+    <li>闸4 物理边界 · 闸5 变更率限幅（防抖）· 闸6 设备保护 · 闸7 置信度</li>
+  </ul>
+  <p>另外：阈值写在<b>配置表</b>而不是提示词里；模型<b>没有应急触发权限</b>；
+     审计<b>链式哈希 + 条数封印</b>，改字段或删记录都能被发现；校验器异常时 <b>fail-closed</b>。</p>
+
+  <h2>最值得记的一条结论</h2>
+  <p><b>格式靠约束解码，语义靠规则 + 微调。</b>
+     JSON Schema 约束把格式合法率推到 97.3%，但纯模型的语义命中率只有 17.3% ——
+     这两件事必须分开投入。生产路径是"规则有定论就不调模型"，模型只用于长尾救援。</p>
+
+  <footer>
+    本地运行 · 零第三方依赖（Python 侧只需 numpy + pandas）· 断网可用<br>
+    绝对数值不可外推：热模型参数未经实测辨识，热舒适用容忍区间代理而非 PMV/PPD。<br>
+    灾难引导是<b>辅助增强系统</b>，不替代消防规范要求；真实部署前必须通过消防审查。
+  </footer>
+</div>
+</body>
+</html>
